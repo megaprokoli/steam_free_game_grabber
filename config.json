@@ -1,0 +1,8 @@
+{
+  "filter_terms": ["free", "Free", "FREE"],
+  "newsfeeds": ["https://store.steampowered.com/news/posts/?headlines=1",
+  "https://store.steampowered.com/news/posts/?headlines=1&feed=steam_community_announcements"],
+  "watchlist": [],
+  "steam_profile_id": "",
+  "use_wishlist": false
+}
