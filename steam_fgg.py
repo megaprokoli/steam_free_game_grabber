@@ -161,6 +161,9 @@ if __name__ == "__main__":
 
             requested["req"] += appids
 
+        if input("Do you want to ignore these games in the futrue? (y)") in ["Y", "y", "yes"]:
+            requested["req"] += appids
+
         json.dump(requested, open(dump_path, "w"))
     else:
         print("I found no new free games")
