@@ -3,6 +3,7 @@ gevent.monkey.patch_all()   # needed to avoid max recursion error
 
 from steam.client import SteamClient
 from steam.client import EResult
+from threading import Thread
 import json
 import argparse
 
@@ -41,29 +42,44 @@ def analyse_newsfeeds(news_scraper, newsfeeds):
     return local_appids
 
 
-def analyse_game_pages(game_scraper, urls):
-    local_appids = []
+def analyse_game_page(scraper):
+    global thread_container
 
-    appid = game_scraper.get_appid()
+    appid = scraper.get_appid()
+
     if appid:
-        local_appids.append(appid)
+        thread_container.append(appid)
+
+
+def analyse_game_pages(urls):
+    global thread_container
+
+    workers = []
 
     for game_url in urls:
-        game_scraper.change_url(game_url)
+        th = Thread(target=lambda:  analyse_game_page(GameScraper(game_url, get_html_with_appid=True)))
+        th.start()
+        workers.append(th)
 
-        appid = game_scraper.get_appid()
-        if appid:
-            local_appids.append(appid)
+    [t.join() for t in workers]
+
+    local_appids = thread_container
+    thread_container = []   # clear thread_container after use
 
     return local_appids
 
 
 if __name__ == "__main__":
+    import time
+
+    start = time.time()
+
     dump_path = const.APPDIR + "requested.json"
     config = json.load(open(const.APPDIR + "config.json"))
     appids = []
     wishlist_urls = None
 
+    thread_container = []
     watchlist_used = len(config["watchlist"]) > 0
     wishlist_used = config["steam_profile_id"] != "" and config["use_wishlist"]
 
@@ -103,21 +119,23 @@ if __name__ == "__main__":
     print("analysing topsellers...")
     topseller_urls = topseller_scraper.get_urls()
     topseller_game_scraper = GameScraper(topseller_urls[0])     # TODO somehow init with other scrapers
-    appids += analyse_game_pages(topseller_game_scraper, topseller_urls[1:])
+    appids += analyse_game_pages(topseller_urls)
 
     # ANALYSE WATCHLIST
     if watchlist_used:
         print("analysing watchlist...")
-        appids += analyse_game_pages(watchlist_scraper, config["watchlist"][1:])
+        appids += analyse_game_pages(config["watchlist"])
 
     # ANALYSE WISHLIST
     if wishlist_used:
         print("analysing wishlist...")
-        appids += analyse_game_pages(wishlist_scraper, wishlist_urls[1:])
+        appids += analyse_game_pages(wishlist_urls)
 
     # FILTERING
     appids = list(filter(lambda a: a not in requested["req"], appids))  # filter already requested games
     appids = set(appids)    # remove duplicates
+
+    print("DONE in", time.time() - start, "s")
 
     # SHOW RESULTS
     if len(appids) > 0:

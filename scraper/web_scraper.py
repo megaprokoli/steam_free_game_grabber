@@ -3,12 +3,14 @@ import requests
 
 
 class WebScraper(ABC):
-    def __init__(self, url, html_parser="html.parser"):
+    def __init__(self, url, html_parser="html.parser", get_html_with_appid=False):
         self.url = url
         self.html_parser = html_parser
         self.html = None
+        self.get_html_with_appid = get_html_with_appid
 
-        self._get_html()
+        if not self.get_html_with_appid:
+            self._get_html()
 
     def _get_html(self):
         self.html = requests.get(self.url).content

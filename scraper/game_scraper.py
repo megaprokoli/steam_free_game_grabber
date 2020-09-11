@@ -5,13 +5,13 @@ from scraper.web_scraper import WebScraper
 
 
 class GameScraper(WebScraper):
-    def __init__(self, url, html_parser="html.parser"):
+    def __init__(self, url, html_parser="html.parser", get_html_with_appid=False):
         """
         Used to scrape a Steam game store page and get the appid if the games is free.
         :param url:
         :param html_parser:
         """
-        super().__init__(url, html_parser)
+        super().__init__(url, html_parser, get_html_with_appid)
         self._re_game_area = re.compile("game_area_purchase_game free_weekend")
         self._re_appid = re.compile(r"[0-9]{5,}")
 
@@ -22,6 +22,9 @@ class GameScraper(WebScraper):
             return appid.group()
 
     def get_appid(self):
+        if self.get_html_with_appid:
+            self._get_html()
+
         soup = BeautifulSoup(self.html, self.html_parser)
         buy_area = soup.find("div", attrs={"class": self._re_game_area})
 
